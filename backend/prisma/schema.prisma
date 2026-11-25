@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  email        String        @unique
+  username     String        @unique
+  usernameKey  String        @unique @map("username_key")
+  passwordHash String        @map("password_hash")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  items        Item[]
+  activityLogs ActivityLog[]
+  sessions     Session[]
+  @@map("users")
+}
+
+model Item {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String        @map("user_id") @db.ObjectId
+  name         String
+  category     String
+  brand        String?
+  quantity     Int           @default(0)
+  purchasePriceCents BigInt  @default(0) @map("purchase_price_cents")
+  purchaseDate DateTime?     @map("purchase_date")
+  condition    String?
+  description  String?
+  specifications String?
+  imagePath    String?       @map("image_path")
+  minimumStock Int           @default(0) @map("minimum_stock")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityLogs ActivityLog[]
+  @@index([userId, createdAt])
+  @@index([userId, category])
+  @@map("items")
+}
+
+model ActivityLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @map("user_id") @db.ObjectId
+  itemId    String?  @map("item_id") @db.ObjectId
+  itemName  String   @map("item_name")
+  action    String
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  @@index([userId, createdAt])
+  @@index([itemId])
+  @@map("activity_logs")
+}
+
+model Session {
+  id        String   @id @map("_id")
+  userId    String   @map("user_id") @db.ObjectId
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("sessions")
+}
